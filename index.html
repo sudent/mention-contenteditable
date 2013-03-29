@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width">
+
+        <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+
+        <link rel="stylesheet" href="css/normalize.css">
+        <link rel="stylesheet" href="css/main.css">
+        <link rel="stylesheet" href="redactor/redactor.css">
+        <script src="js/vendor/modernizr-2.6.2.min.js"></script>
+    </head>
+    <body>
+        <!--[if lt IE 7]>
+            <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
+        <![endif]-->
+
+        <!-- Add your site or application content here -->
+        <p>Insert @ anywhere to start mentioning. Press enter to stop and insert the mention subject. Press escape to cancel mentioning.</p>
+        <div id="content" contenteditable="" style="margin: 50px; padding: 10px; border: 1px solid black;">
+            <p><span>span</span> text <b>bold <em>em</em></b> text</p>
+            <p>text below</p>
+        </div>
+
+        <div><p>Your mention keyword is: <span id="keyword"></span> </p></div>
+
+        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.9.0.min.js"><\/script>')</script>
+        <script src="js/plugins.js"></script>
+        <script src="js/main.js"></script>
+
+        <script>
+            var d = $('#content');
+            var keyword, node, startOffset, endOffset, mentioning = false;
+            $('<div style="padding:5px;background-color: #000;color:#fff;" id="mentioning-status">Mentioning on</div>').prependTo('body');
+            $('#mentioning-status').hide();
+
+            d.keydown(function(e) {
+                var key = e.keyCode || e.which;
+                if(mentioning && key == 13) {
+                    e.preventDefault();
+                }
+            });
+
+            d.keyup(function(e) {
+                var key = e.keyCode || e.which;
+                var sel = window.getSelection();
+                if(!mentioning && e.shiftKey && key == 50) {
+                    mentioning = true;
+                    node = sel.focusNode;
+                    startOffset = sel.focusOffset;
+                    $('#mentioning-status').show();
+                } else if (mentioning && key == 13) {
+                    var sel = window.getSelection();
+                    endOffset = sel.focusOffset;
+                    mentioning = false;
+                    var range = sel.getRangeAt(0);
+                    range.setStart(node, startOffset-1);
+                    range.deleteContents();
+                    insertNodeAtCaret($('<span>[mentionId]</span>')[0]);
+                    $('#mentioning-status').hide();
+                } else if (mentioning && key == 27) {
+                    mentioning = false;
+                    $('#mentioning-status').hide();
+                    $('#keyword').html('');
+                } else if (mentioning) {
+                    endOffset = sel.focusOffset;var range = sel.getRangeAt(0);
+
+                    if(endOffset < startOffset) {
+                        mentioning = false;
+                        $('#mentioning-status').hide();
+                        return;
+                    }
+
+                    range.setStart(node, startOffset);
+                    range.setEnd(node, endOffset);
+
+                    keyword = range.toString();
+                    $('#keyword').html(keyword);
+                }
+            });
+
+            function insertNodeAtCaret(node) {
+                if (typeof window.getSelection != "undefined") {
+                    var sel = window.getSelection();
+                    if (sel.rangeCount) {
+                        var range = sel.getRangeAt(0);
+                        range.collapse(false);
+                        range.insertNode(node);
+                        range = range.cloneRange();
+                        range.selectNodeContents(node);
+                        range.collapse(false);
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    }
+                } else if (typeof document.selection != "undefined" && document.selection.type != "Control") {
+                    var html = (node.nodeType == 1) ? node.outerHTML : node.data;
+                    var id = "marker_" + ("" + Math.random()).slice(2);
+                    html += '<span id="' + id + '"></span>';
+                    var textRange = document.selection.createRange();
+                    textRange.collapse(false);
+                    textRange.pasteHTML(html);
+                    var markerSpan = document.getElementById(id);
+                    textRange.moveToElementText(markerSpan);
+                    textRange.select();
+                    markerSpan.parentNode.removeChild(markerSpan);
+                }
+            }
+        </script>
+    </body>
+</html>
